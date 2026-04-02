@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Visual Level Editor</title>
+    <style>
+        body { font-family: sans-serif; background: #1a1a1a; color: #eee; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .toolbar { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .brush-btn { border: 2px solid transparent; padding: 5px; cursor: pointer; background: #333; border-radius: 4px; display: flex; flex-direction: column; align-items: center; width: 70px; }
+        .brush-btn.active { border-color: #27ae60; background: #444; }
+        .brush-btn img { width: 32px; height: 32px; object-fit: contain; }
+        .brush-btn span { font-size: 11px; margin-top: 4px; }
+        
+        #grid { display: grid; background: #333; border: 1px solid #555; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .cell { width: 32px; height: 32px; border: 1px solid rgba(255,255,255,0.05); background-size: cover; cursor: crosshair; }
+        .cell:hover { outline: 2px solid #27ae60; z-index: 10; }
+        
+        .io-section { margin-top: 20px; width: 100%; max-width: 660px; }
+        textarea { width: 100%; height: 120px; background: #000; color: #0f0; font-family: monospace; border: 1px solid #444; padding: 10px; box-sizing: border-box; }
+        .export-btn { background: #27ae60; color: white; border: none; padding: 10px 20px; font-weight: bold; cursor: pointer; border-radius: 4px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="toolbar" id="toolbar"></div>
+
+    <div id="grid"></div>
+
+    <div class="io-section">
+        <button class="export-btn" onclick="exportLevel()">Get Level Text</button>
+        <textarea id="output" readonly placeholder="Level data will appear here..."></textarea>
+    </div>
+
+    <script>
+        // --- CONFIGURATION: ADD NEW TILES HERE ---
+        const TILE_TYPES = [
+            { name: "Grass",  symbol: "G", img: "assets/grass.png" },
+            { name: "Dirt",  symbol: "D", img: "assets/dirt.png" },
+            { name: "Brick",   symbol: "B", img: "assets/brick.png" },
+            { name: "Coin",   symbol: "C", img: "assets/gold.png"  },
+            { name: "Glass",   symbol: "#", img: "assets/glass.png"  },
+            { name: "Lava",   symbol: "^", img: "assets/lava.png"  },
+            { name: "Wood",   symbol: "W", img: "assets/wood.png"  },
+            { name: "Goal",   symbol: "*", img: "assets/emerald.png"  },
+        ];
+
+        const GRID_WIDTH = 32;
+        const GRID_HEIGHT = 24;
+        let activeBrush = TILE_TYPES[0]; // Default to Wall
+
+        const gridEl = document.getElementById('grid');
+        const toolbarEl = document.getElementById('toolbar');
+
+        // Create Toolbar
+        TILE_TYPES.forEach(type => {
+            const btn = document.createElement('div');
+            btn.className = `brush-btn ${type === activeBrush ? 'active' : ''}`;
+            btn.innerHTML = `<img src="${type.img}"><span>${type.name}</span>`;
+            btn.onclick = () => {
+                document.querySelectorAll('.brush-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                activeBrush = type;
+            };
+            toolbarEl.appendChild(btn);
+        });
+
+        // Create Grid
+        gridEl.style.gridTemplateColumns = `repeat(${GRID_WIDTH}, 32px)`;
+        for (let i = 0; i < GRID_WIDTH * GRID_HEIGHT; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.dataset.symbol = "0"; // Default floor
+            
+            // Interaction: Draw on click or drag
+            const paint = (e) => {
+                if (e.buttons === 1) { // Left click held
+                    cell.dataset.symbol = activeBrush.symbol;
+                    cell.style.backgroundImage = `url(${activeBrush.img})`;
+                }
+            };
+            cell.onmousedown = paint;
+            cell.onmouseover = paint;
+            gridEl.appendChild(cell);
+        }
+
+        function exportLevel() {
+            let text = "";
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach((c, i) => {
+                text += c.dataset.symbol;
+                if ((i + 1) % GRID_WIDTH === 0) text += "\n";
+            });
+            document.getElementById('output').value = text.trim();
+        }
+    </script>
+</body>
+</html>
